@@ -102,6 +102,41 @@ async function loadScheduleData() {
 // Load students data
 async function loadStudentsData() {
     try {
+        // Load bookings first
+        const bookingsResponse = await fetch('/api/bookings');
+        const bookings = await bookingsResponse.json();
+        
+        const bookingsTable = document.getElementById('bookingsTable');
+        bookingsTable.innerHTML = '';
+        
+        bookings.forEach(booking => {
+            const row = document.createElement('tr');
+            const contactLink = booking.contact_method === 'whatsapp' 
+                ? `https://wa.me/${booking.student_phone.replace(/\D/g, '')}`
+                : booking.contact_method === 'telegram'
+                ? `https://t.me/${booking.student_phone.replace(/\D/g, '')}`
+                : `tel:${booking.student_phone}`;
+            
+            row.innerHTML = `
+                <td>${new Date(booking.created_at).toLocaleDateString('ru-RU')}</td>
+                <td>${booking.student_name}</td>
+                <td>
+                    <a href="${contactLink}" target="_blank">${booking.student_phone}</a>
+                </td>
+                <td>${booking.grade} класс</td>
+                <td>${booking.subject}</td>
+                <td>${booking.date} ${booking.time}</td>
+                <td>${booking.contact_method}</td>
+                <td><span class="status-badge pending">Новая</span></td>
+                <td>
+                    <button class="btn-icon" title="Принять" onclick="acceptBooking('${booking.id}')">✅</button>
+                    <button class="btn-icon" title="Отклонить" onclick="rejectBooking('${booking.id}')">❌</button>
+                </td>
+            `;
+            bookingsTable.appendChild(row);
+        });
+        
+        // Load existing students
         const response = await fetch('/api/students');
         const students = await response.json();
         
@@ -323,14 +358,43 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Auto-refresh dashboard every 30 seconds
     setInterval(loadDashboardData, 30000);
+    
+    // Add click handlers for buttons
+    const checkGapsBtn = document.querySelector('button[onclick="checkGaps()"]');
+    if (checkGapsBtn) {
+        checkGapsBtn.addEventListener('click', checkGaps);
+    }
+    
+    const addStudentBtn = document.querySelector('button[onclick="addStudent()"]');
+    if (addStudentBtn) {
+        addStudentBtn.addEventListener('click', addStudent);
+    }
+    
+    const kaspiBtn = document.querySelector('button[onclick="generateKaspiLink()"]');
+    if (kaspiBtn) {
+        kaspiBtn.addEventListener('click', generateKaspiLink);
+    }
+    
+    const saveContentBtn = document.querySelector('button[onclick="saveContent()"]');
+    if (saveContentBtn) {
+        saveContentBtn.addEventListener('click', saveContent);
+    }
 });
 
 // Handle navigation clicks
 document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', (e) => {
-        e.preventDefault();
         const href = item.getAttribute('href');
+        
+        // Handle external links
+        if (href === '/') {
+            window.location.href = '/';
+            return;
+        }
+        
+        // Handle internal navigation
         if (href && href.startsWith('#')) {
+            e.preventDefault();
             const sectionId = href.substring(1);
             if (document.getElementById(sectionId)) {
                 showSection(sectionId);

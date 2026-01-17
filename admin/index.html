@@ -38,7 +38,7 @@
                 </a>
             </nav>
             <div class="sidebar-footer">
-                <a href="/" class="nav-item">
+                <a href="/" class="nav-item" onclick="window.location.href='/'">
                     <span class="icon">🏠</span>
                     <span>На главную</span>
                 </a>
@@ -103,7 +103,7 @@
             <section id="schedule" class="content-section">
                 <div class="section-header">
                     <h2>Управление расписанием</h2>
-                    <button class="btn-primary" onclick="checkGaps()">Проверить окна</button>
+                    <button class="btn-primary" id="checkGapsBtn">Проверить окна</button>
                 </div>
                 
                 <div class="calendar-integration">
@@ -161,10 +161,34 @@
             <section id="students" class="content-section">
                 <div class="section-header">
                     <h2>База учеников</h2>
-                    <button class="btn-primary" onclick="addStudent()">+ Добавить ученика</button>
+                    <button class="btn-primary" id="addStudentBtn">+ Добавить ученика</button>
+                </div>
+
+                <!-- New Bookings Section -->
+                <div class="table-container">
+                    <h3>Новые заявки на пробный урок</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Дата заявки</th>
+                                <th>Имя</th>
+                                <th>Телефон</th>
+                                <th>Класс</th>
+                                <th>Предмет</th>
+                                <th>Желаемое время</th>
+                                <th>Связь</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingsTable">
+                            <!-- Заявки будут загружены через API -->
+                        </tbody>
+                    </table>
                 </div>
 
                 <div class="table-container">
+                    <h3>Активные ученики</h3>
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -176,42 +200,7 @@
                             </tr>
                         </thead>
                         <tbody id="studentsTable">
-                            <tr>
-                                <td>Айдар Нурланов</td>
-                                <td>8 класс</td>
-                                <td>
-                                    <a href="https://wa.me/77001234567" target="_blank">WhatsApp</a>
-                                </td>
-                                <td><span class="payment-badge paid">Оплачено</span></td>
-                                <td>
-                                    <button class="btn-icon" title="Редактировать">✏️</button>
-                                    <button class="btn-icon" title="Удалить">🗑️</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Асель Каримова</td>
-                                <td>9 класс</td>
-                                <td>
-                                    <a href="https://t.me/username" target="_blank">Telegram</a>
-                                </td>
-                                <td><span class="payment-badge debt">Долг</span></td>
-                                <td>
-                                    <button class="btn-icon" title="Редактировать">✏️</button>
-                                    <button class="btn-icon" title="Удалить">🗑️</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Ерлан Сапаров</td>
-                                <td>7 класс</td>
-                                <td>
-                                    <a href="https://wa.me/77009876543" target="_blank">WhatsApp</a>
-                                </td>
-                                <td><span class="payment-badge paid">Оплачено</span></td>
-                                <td>
-                                    <button class="btn-icon" title="Редактировать">✏️</button>
-                                    <button class="btn-icon" title="Удалить">🗑️</button>
-                                </td>
-                            </tr>
+                            <!-- Ученики будут загружены через API -->
                         </tbody>
                     </table>
                 </div>
@@ -221,7 +210,7 @@
             <section id="finance" class="content-section">
                 <div class="section-header">
                     <h2>Финансовый блок</h2>
-                    <button class="btn-kaspi" onclick="generateKaspiLink()">Сформировать ссылку на 7 000 ₸</button>
+                    <button class="btn-kaspi" id="kaspiBtn">Сформировать ссылку на 7 000 ₸</button>
                 </div>
 
                 <div class="finance-summary">
@@ -276,7 +265,7 @@
             <section id="content" class="content-section">
                 <div class="section-header">
                     <h2>Редактор контента</h2>
-                    <button class="btn-primary" onclick="saveContent()">Сохранить изменения</button>
+                    <button class="btn-primary" id="saveContentBtn">Сохранить изменения</button>
                 </div>
 
                 <div class="editor-grid">
