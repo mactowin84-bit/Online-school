@@ -109,32 +109,40 @@ async function loadStudentsData() {
         const bookingsTable = document.getElementById('bookingsTable');
         bookingsTable.innerHTML = '';
         
-        bookings.forEach(booking => {
-            const row = document.createElement('tr');
-            const contactLink = booking.contact_method === 'whatsapp' 
-                ? `https://wa.me/${booking.student_phone.replace(/\D/g, '')}`
-                : booking.contact_method === 'telegram'
-                ? `https://t.me/${booking.student_phone.replace(/\D/g, '')}`
-                : `tel:${booking.student_phone}`;
-            
-            row.innerHTML = `
-                <td>${new Date(booking.created_at).toLocaleDateString('ru-RU')}</td>
-                <td>${booking.student_name}</td>
-                <td>
-                    <a href="${contactLink}" target="_blank">${booking.student_phone}</a>
-                </td>
-                <td>${booking.grade} класс</td>
-                <td>${booking.subject}</td>
-                <td>${booking.date} ${booking.time}</td>
-                <td>${booking.contact_method}</td>
-                <td><span class="status-badge pending">Новая</span></td>
-                <td>
-                    <button class="btn-icon" title="Принять" onclick="acceptBooking('${booking.id}')">✅</button>
-                    <button class="btn-icon" title="Отклонить" onclick="rejectBooking('${booking.id}')">❌</button>
-                </td>
-            `;
-            bookingsTable.appendChild(row);
-        });
+        // Show only pending bookings
+        const pendingBookings = bookings.filter(booking => booking.status === 'pending');
+        
+        if (pendingBookings.length === 0) {
+            bookingsTable.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #666;">Нет новых заявок</td></tr>';
+        } else {
+            pendingBookings.forEach(booking => {
+                const row = document.createElement('tr');
+                const contactLink = booking.contact_method === 'whatsapp' 
+                    ? `https://wa.me/${booking.student_phone.replace(/\D/g, '')}`
+                    : booking.contact_method === 'telegram'
+                    ? `https://t.me/${booking.student_phone.replace(/\D/g, '')}`
+                    : `tel:${booking.student_phone}`;
+                
+                row.innerHTML = `
+                    <td>${new Date(booking.created_at).toLocaleDateString('ru-RU')}</td>
+                    <td>${booking.student_name}</td>
+                    <td>
+                        <a href="${contactLink}" target="_blank">${booking.student_phone}</a>
+                    </td>
+                    <td>${booking.grade} класс</td>
+                    <td>${booking.subject}</td>
+                    <td>${booking.date} ${booking.time}</td>
+                    <td>${booking.contact_method}</td>
+                    <td><span class="status-badge pending">Новая</span></td>
+                    <td>
+                        <button class="btn-icon accept-btn" title="Принять" data-booking-id="${booking.id}">✅</button>
+                        <button class="btn-icon reject-btn" title="Отклонить" data-booking-id="${booking.id}">❌</button>
+                        <button class="btn-icon calendar-btn" title="Добавить в календарь" data-booking='${JSON.stringify(booking)}'>📅</button>
+                    </td>
+                `;
+                bookingsTable.appendChild(row);
+            });
+        }
         
         // Load existing students
         const response = await fetch('/api/students');
@@ -287,8 +295,66 @@ async function checkGaps() {
     }
 }
 
-// Student Functions
-function addStudent() {
+// Booking management functions
+async function acceptBooking(bookingId) {
+    try {
+        const response = await fetch(`/api/bookings/${bookingId}/accept`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+            alert('Заявка принята! Ученик добавлен в расписание.');
+            loadStudentsData(); // Refresh the table
+            loadDashboardData(); // Update stats
+        } else {
+            alert('Ошибка при принятии заявки');
+        }
+    } catch (error) {
+        console.error('Error accepting booking:', error);
+        alert('Ошибка при принятии заявки');
+    }
+}
+
+async function rejectBooking(bookingId) {
+    if (confirm('Вы уверены, что хотите отклонить эту заявку?')) {
+        try {
+            const response = await fetch(`/api/bookings/${bookingId}/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                alert('Заявка отклонена');
+                loadStudentsData(); // Refresh the table
+                loadDashboardData(); // Update stats
+            } else {
+                alert('Ошибка при отклонении заявки');
+            }
+        } catch (error) {
+            console.error('Error rejecting booking:', error);
+            alert('Ошибка при отклонении заявки');
+        }
+    }
+}
+
+// Create Google Calendar event
+function createCalendarEvent(booking) {
+    const startDate = new Date(`${booking.date}T${booking.time}:00`);
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour later
+    
+    const eventDetails = {
+        title: `Урок ${booking.subject} - ${booking.student_name}`,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+        description: `Ученик: ${booking.student_name}\nКласс: ${booking.grade}\nТелефон: ${booking.student_phone}\nСвязь: ${booking.contact_method}\nКомментарий: ${booking.comments || 'Нет'}`
+    };
+    
+    // Create Google Calendar link
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.title)}&dates=${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(eventDetails.description)}`;
+    
+    window.open(googleCalendarUrl, '_blank');
+}
     const name = prompt('Введите имя ученика:');
     if (name) {
         const phone = prompt('Введите номер телефона:');
@@ -360,25 +426,40 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(loadDashboardData, 30000);
     
     // Add click handlers for buttons
-    const checkGapsBtn = document.querySelector('button[onclick="checkGaps()"]');
+    const checkGapsBtn = document.getElementById('checkGapsBtn');
     if (checkGapsBtn) {
         checkGapsBtn.addEventListener('click', checkGaps);
     }
     
-    const addStudentBtn = document.querySelector('button[onclick="addStudent()"]');
+    const addStudentBtn = document.getElementById('addStudentBtn');
     if (addStudentBtn) {
         addStudentBtn.addEventListener('click', addStudent);
     }
     
-    const kaspiBtn = document.querySelector('button[onclick="generateKaspiLink()"]');
+    const kaspiBtn = document.getElementById('kaspiBtn');
     if (kaspiBtn) {
         kaspiBtn.addEventListener('click', generateKaspiLink);
     }
     
-    const saveContentBtn = document.querySelector('button[onclick="saveContent()"]');
+    const saveContentBtn = document.getElementById('saveContentBtn');
     if (saveContentBtn) {
         saveContentBtn.addEventListener('click', saveContent);
     }
+    
+    // Add event delegation for booking buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('accept-btn')) {
+            const bookingId = e.target.getAttribute('data-booking-id');
+            acceptBooking(bookingId);
+        } else if (e.target.classList.contains('reject-btn')) {
+            const bookingId = e.target.getAttribute('data-booking-id');
+            rejectBooking(bookingId);
+        } else if (e.target.classList.contains('calendar-btn')) {
+            const bookingData = e.target.getAttribute('data-booking');
+            const booking = JSON.parse(bookingData);
+            createCalendarEvent(booking);
+        }
+    });
 });
 
 // Handle navigation clicks

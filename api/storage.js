@@ -6,7 +6,24 @@ class SimpleStorage {
     constructor() {
         this.data = {
             bookings: [],
-            students: [],
+            students: [
+                {
+                    id: '1',
+                    name: 'Айдар Нурланов',
+                    phone: '+7 (701) 234-56-78',
+                    grade: 8,
+                    contact_method: 'whatsapp',
+                    status: 'active'
+                },
+                {
+                    id: '2',
+                    name: 'Асель Каримова',
+                    phone: '+7 (702) 345-67-89',
+                    grade: 9,
+                    contact_method: 'telegram',
+                    status: 'active'
+                }
+            ],
             lessons: [],
             transactions: []
         };
@@ -33,12 +50,31 @@ class SimpleStorage {
         return this.data.bookings;
     }
 
+    async addStudent(student) {
+        this.data.students.push(student);
+        return student;
+    }
+
+    async getStudents() {
+        return this.data.students;
+    }
+
+    async addLesson(lesson) {
+        this.data.lessons.push(lesson);
+        return lesson;
+    }
+
+    async getLessons() {
+        return this.data.lessons;
+    }
+
     async getStats() {
+        const pendingBookings = this.data.bookings.filter(b => b.status === 'pending');
         return {
-            totalStudents: this.data.students.length || 12,
-            todayLessons: 5,
+            totalStudents: this.data.students.length,
+            todayLessons: this.data.lessons.filter(l => l.date === new Date().toISOString().split('T')[0]).length,
             expectedIncome: 35000,
-            trialRequests: this.data.bookings.length || 0
+            trialRequests: pendingBookings.length
         };
     }
 }
